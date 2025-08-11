@@ -1,0 +1,10 @@
+{
+    "name": "Avaliador de Corridas",
+    "short_name": "Avaliador",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0b0c10",
+    "theme_color": "#0b0c10",
+    "icons": []
+  }
+  

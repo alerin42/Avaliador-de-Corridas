@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Avaliador de Corridas</title>
+  <meta name="theme-color" content="#0b0c10">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <style>
+    :root { --gap: 12px; --radius: 14px; }
+    html, body { margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial; background:#0b0c10; color:#f1f5f9; }
+    .wrap { max-width: 900px; margin:0 auto; padding:20px 16px 40px; }
+    h1 { font-size:1.6rem; margin:4px 0 12px; letter-spacing:-0.3px; }
+    .subtitle { color:#93a4bf; margin:0 0 16px; font-size:0.95rem; }
+    .card { background:#111319; border:1px solid #1f2430; border-radius:var(--radius); padding:16px; box-shadow:0 10px 30px rgba(0,0,0,0.25); margin-bottom:14px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
+    @media (max-width: 700px) { .grid { grid-template-columns:1fr; } }
+    label { font-size:0.88rem; color:#cbd5e1; display:block; margin-bottom:6px; }
+    input[type="number"], input[type="text"], select { width:100%; padding:12px; border-radius:10px; border:1px solid #263045; background:#0d1117; color:#e2e8f0; font-size:1rem; outline:none; transition:border-color .2s ease; -webkit-appearance:none; }
+    input:focus, select:focus { border-color:#3b82f6; }
+    .row { margin-bottom:var(--gap); }
+    .actions { display:flex; gap:var(--gap); flex-wrap:wrap; margin-top:8px; }
+    button { padding:12px 16px; border-radius:10px; border:1px solid #2a334a; background:#1a2236; color:#e2e8f0; font-size:1rem; cursor:pointer; transition:transform .02s ease, background .2s ease, border-color .2s ease; touch-action:manipulation; }
+    button:active { transform:scale(0.99); }
+    .primary { background:#2563eb; border-color:#1d4ed8; color:#fff; }
+    .ghost { background:transparent; }
+    .result { margin-top:16px; padding:16px; border-radius:var(--radius); background:#0f172a; border:1px solid #23314f; }
+    .ok { border-color:#16a34a; box-shadow:0 0 0 1px rgba(22,163,74,.25) inset; }
+    .warn { border-color:#f59e0b; box-shadow:0 0 0 1px rgba(245,158,11,.2) inset; }
+    .bad { border-color:#ef4444; box-shadow:0 0 0 1px rgba(239,68,68,.2) inset; }
+    .kpis { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:var(--gap); margin-top:12px; }
+    @media (max-width: 480px) { .kpis { grid-template-columns:1fr; } }
+    .kpi { background:#0b1223; border:1px solid #1e2a44; border-radius:12px; padding:12px; }
+    .kpi h3 { margin:0 0 4px; font-size:0.95rem; color:#cbd5e1; }
+    .kpi p { margin:0; font-size:1.1rem; font-weight:600; }
+    .fine { color:#22c55e; } .meh { color:#f59e0b; } .fail { color:#ef4444; }
+    small.muted { color:#94a3b8; display:block; margin-top:8px; line-height:1.35; }
+    .footer { margin-top:18px; color:#93a4bf; font-size:0.9rem; }
+    .footer a { color:#93c5fd; }
+    .row.inline { display:flex; align-items:center; gap:10px; }
+    .row.inline label { margin:0; }
+    .reasons { margin-top:10px; color:#cbd5e1; } .reasons li { margin-bottom:6px; }
+    .presets { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .preset { padding:8px 10px; border-radius:999px; border:1px solid #2a334a; background:#0c1426; cursor:pointer; font-size:0.92rem; }
+    .preset:hover { border-color:#3b82f6; }
+    .weights { display:grid; grid-template-columns: repeat(4, 1fr); gap:var(--gap); margin-top:8px; }
+    @media (max-width: 700px) { .weights { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🚗 Avaliador de Corridas</h1>
+    <p class="subtitle">Decida <b>aceitar</b> ou <b>recusar</b> com base nas suas metas. Use somente parado/estacionado. Não automatize outros apps.</p>
+
+    <div class="card">
+      <h3 style="margin-top:0">Oferta atual</h3>
+      <div class="grid">
+        <div class="row"><label for="tarifa">Valor mostrado ao motorista (R$)</label><input id="tarifa" type="number" inputmode="decimal" step="0.01" placeholder="Ex.: 18.90"></div>
+        <div class="row"><label for="dist">Distância da corrida (km)</label><input id="dist" type="number" inputmode="decimal" step="0.1" placeholder="Ex.: 7.5"></div>
+        <div class="row"><label for="dur">Duração da corrida (min)</label><input id="dur" type="number" inputmode="decimal" step="1" placeholder="Ex.: 16"></div>
+        <div class="row"><label for="deadhead">Distância até o pickup (km)</label><input id="deadhead" type="number" inputmode="decimal" step="0.1" placeholder="Ex.: 1.8"></div>
+        <div class="row"><label for="pedagios">Pedágios/estacionamento (R$)</label><input id="pedagios" type="number" inputmode="decimal" step="0.01" placeholder="Ex.: 4.50"></div>
+        <div class="row"><label for="bonus">Bônus/promos (R$)</label><input id="bonus" type="number" inputmode="decimal" step="0.01" placeholder="Ex.: 3.00"></div>
+      </div>
+      <div class="row inline"><input type="checkbox" id="valorLiquido" checked><label for="valorLiquido">O valor acima já é o que você recebe (Uber já descontado)</label></div>
+      <div class="row" id="taxaPlataformaWrap" style="display:none;"><label for="taxaPlataforma">Taxa da plataforma (%)</label><input id="taxaPlataforma" type="number" inputmode="decimal" step="1" placeholder="Ex.: 25"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Seus custos e metas</h3>
+      <div class="grid">
+        <div class="row"><label for="metah">Meta de ganho <u>líquido</u> (R$/h)</label><input id="metah" type="number" inputmode="decimal" step="1" placeholder="Ex.: 40"></div>
+        <div class="row"><label for="metaKm">Meta de ganho líquido (R$/km)</label><input id="metaKm" type="number" inputmode="decimal" step="0.1" placeholder="Ex.: 2.00"></div>
+        <div class="row"><label for="c_km">Custo operacional (R$/km)</label><input id="c_km" type="number" inputmode="decimal" step="0.01" placeholder="Ex.: 1.10"></div>
+        <div class="row"><label for="c_h">Custo de tempo (R$/h)</label><input id="c_h" type="number" inputmode="decimal" step="1" placeholder="5"></div>
+        <div class="row"><label for="vm">Velocidade média até o pickup (km/h)</label><input id="vm" type="number" inputmode="decimal" step="1" placeholder="25"></div>
+        <div class="row"><label for="scoreMin">Score mínimo para aceitar (0–100)</label><input id="scoreMin" type="number" inputmode="decimal" step="1" placeholder="70"></div>
+      </div>
+
+      <div class="grid">
+        <div class="row"><label for="maxDeadheadKm">Máx. pickup (km)</label><input id="maxDeadheadKm" type="number" inputmode="decimal" step="0.1" placeholder="3"></div>
+        <div class="row"><label for="maxDeadheadRatio">Máx. pickup/viagem (%)</label><input id="maxDeadheadRatio" type="number" inputmode="decimal" step="1" placeholder="60"></div>
+        <div class="row"><label for="minTarifa">Tarifa mínima (R$)</label><input id="minTarifa" type="number" inputmode="decimal" step="0.5" placeholder="8"></div>
+        <div class="row"><label for="minDur">Duração mínima (min)</label><input id="minDur" type="number" inputmode="decimal" step="1" placeholder="6"></div>
+      </div>
+
+      <div class="weights">
+        <div class="row"><label for="w_h">Peso R$/h (%)</label><input id="w_h" type="number" inputmode="decimal" step="1" placeholder="50"></div>
+        <div class="row"><label for="w_km">Peso R$/km (%)</label><input id="w_km" type="number" inputmode="decimal" step="1" placeholder="30"></div>
+        <div class="row"><label for="w_dead">Peso Pickup (%)</label><input id="w_dead" type="number" inputmode="decimal" step="1" placeholder="10"></div>
+        <div class="row"><label for="w_dur">Peso Duração (%)</label><input id="w_dur" type="number" inputmode="decimal" step="1" placeholder="10"></div>
+      </div>
+
+      <div class="presets">
+        <span class="preset" onclick="aplicarPreset('off')">Preset: Horário normal</span>
+        <span class="preset" onclick="aplicarPreset('pico')">Preset: Pico</span>
+        <span class="preset" onclick="aplicarPreset('madrugada')">Preset: Madrugada</span>
+        <span class="preset" onclick="aplicarPreset('chuva')">Preset: Chuva</span>
+        <span class="preset" onclick="aplicarPreset('aeroporto')">Preset: Aeroporto</span>
+        <span class="preset" onclick="aplicarPreset('centro')">Preset: Centro/Bairro</span>
+      </div>
+
+      <div class="actions">
+        <button class="ghost" onclick="salvarPadroes()">Salvar padrões</button>
+        <button class="ghost" onclick="exportar()">Exportar config</button>
+        <button class="ghost" onclick="importar()">Importar config</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Analisar</h3>
+      <div class="actions">
+        <button class="primary" onclick="calcular()">Calcular</button>
+        <button class="ghost" onclick="limpar()">Limpar oferta</button>
+        <button class="ghost" onclick="addAtalho()">Instalar atalho na tela inicial</button>
+        <button class="ghost" onclick="compartilhar()">Compartilhar resumo</button>
+      </div>
+      <div id="res" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- SESSÃO DE TRABALHO -->
+    <div class="card" id="sessao">
+      <h3 style="margin-top:0">Sessão de trabalho</h3>
+      <div class="kpis">
+        <div class="kpi"><h3>Horas trabalhadas</h3><p id="sessHoras">00:00</p></div>
+        <div class="kpi"><h3>Faturado (líquido)</h3><p id="sessFaturado">R$ 0,00</p></div>
+        <div class="kpi"><h3>Corridas</h3><p id="sessCorridas">0</p></div>
+        <div class="kpi"><h3>Média (R$/h)</h3><p id="sessMedia">R$ 0,00</p></div>
+      </div>
+      <div class="actions" style="margin-top:10px;">
+        <button class="primary" id="btnSessToggle">Iniciar</button>
+        <button class="ghost" id="btnSessAdd">Adicionar corrida atual</button>
+        <button class="ghost" id="btnSessReset">Zerar sessão</button>
+      </div>
+      <small class="muted">Dica: inicie ao começar o turno e vá somando as corridas analisadas. O tempo considera o cronômetro + duração total das corridas adicionadas.</small>
+    </div>
+
+    <div class="footer">
+      Segurança: utilize apenas com o carro <b>parado</b>. Não interfira nem automatize apps de terceiros — risco de violar termos. Este app calcula com base nas informações inseridas manualmente.
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const cfgKey = 'cfg_avaliador_v3';
+
+    function parse(n, fallback=0){ const v = parseFloat(String(n).replace(',', '.')); return isFinite(v)?v:fallback; }
+    function fmt(n){ return n.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+    function saveLocal(o){ localStorage.setItem(cfgKey, JSON.stringify(o)); }
+    function loadLocal(){ try { return JSON.parse(localStorage.getItem(cfgKey)||'{}'); } catch(e){ return {}; } }
+
+    const PRESETS = {
+      off: { metah:40, metaKm:2.0, c_km:1.1, c_h:5, vm:25, scoreMin:70, maxDeadheadKm:3, maxDeadheadRatio:60, minTarifa:8, minDur:6, w:{h:50,km:30,dead:10,dur:10} },
+      pico: { metah:55, metaKm:2.3, c_km:1.2, c_h:7, vm:20, scoreMin:75, maxDeadheadKm:4, maxDeadheadRatio:70, minTarifa:10, minDur:5, w:{h:55,km:30,dead:10,dur:5} },
+      madrugada: { metah:45, metaKm:2.1, c_km:1.15, c_h:6, vm:30, scoreMin:65, maxDeadheadKm:5, maxDeadheadRatio:80, minTarifa:8, minDur:0, w:{h:50,km:30,dead:10,dur:10} },
+      chuva: { metah:60, metaKm:2.5, c_km:1.25, c_h:7, vm:18, scoreMin:78, maxDeadheadKm:5, maxDeadheadRatio:80, minTarifa:12, minDur:5, w:{h:50,km:35,dead:10,dur:5} },
+      aeroporto: { metah:58, metaKm:2.4, c_km:1.2, c_h:7, vm:22, scoreMin:75, maxDeadheadKm:6, maxDeadheadRatio:85, minTarifa:15, minDur:10, w:{h:45,km:35,dead:10,dur:10} },
+      centro: { metah:50, metaKm:2.2, c_km:1.15, c_h:6, vm:20, scoreMin:72, maxDeadheadKm:3.5, maxDeadheadRatio:65, minTarifa:9, minDur:5, w:{h:50,km:30,dead:15,dur:5} }
+    };
+
+    function aplicarPreset(key){
+      const p = PRESETS[key]; if(!p) return;
+      ['metah','metaKm','c_km','c_h','vm','scoreMin','maxDeadheadKm','maxDeadheadRatio','minTarifa','minDur'].forEach(id => { $(id).value = p[id]; });
+      $('w_h').value = p.w.h; $('w_km').value = p.w.km; $('w_dead').value = p.w.dead; $('w_dur').value = p.w.dur;
+      salvarPadroes();
+    }
+
+    function toggleTaxa(){ const show = !$('valorLiquido').checked; $('taxaPlataformaWrap').style.display = show ? 'block':'none'; }
+    function carregar(){
+      const cfg = loadLocal();
+      ['metah','metaKm','c_km','c_h','vm','scoreMin','maxDeadheadKm','maxDeadheadRatio','minTarifa','minDur','taxaPlataforma','w_h','w_km','w_dead','w_dur'].forEach(id=>{ if(cfg[id]!==undefined) $(id).value = cfg[id]; });
+      if (cfg.valorLiquido !== undefined) $('valorLiquido').checked = !!cfg.valorLiquido;
+      toggleTaxa();
+      // sessão
+      sessUpdateUI();
+    }
+    function salvarPadroes(){
+      const ids = ['metah','metaKm','c_km','c_h','vm','scoreMin','maxDeadheadKm','maxDeadheadRatio','minTarifa','minDur','taxaPlataforma','w_h','w_km','w_dead','w_dur'];
+      const o = loadLocal(); ids.forEach(id=> o[id] = $(id).value); o.valorLiquido = $('valorLiquido').checked; saveLocal(o); alert('Padrões salvos neste dispositivo.');
+    }
+    function exportar(){ const o = loadLocal(); const ta = document.createElement('textarea'); ta.style.width='100%'; ta.style.minHeight='120px'; ta.style.marginTop='8px'; ta.value = JSON.stringify(o, null, 2); const card = document.createElement('div'); card.className='card'; const h = document.createElement('h3'); h.textContent='Exportar configuração'; card.appendChild(h); card.appendChild(ta); document.querySelector('.wrap').appendChild(card); ta.select(); }
+    function importar(){ const json = prompt('Cole aqui a configuração exportada (JSON):'); if(!json) return; try{ const o = JSON.parse(json); saveLocal(o); alert('Config importada. Recarregando...'); location.reload(); }catch(e){ alert('JSON inválido.'); } }
+    function limpar(){ ['tarifa','dist','dur','deadhead','pedagios','bonus'].forEach(id=> $(id).value = ''); $('res').style.display='none'; }
+    function addAtalho(){ alert('No Safari do iPhone: Compartilhar → “Adicionar à Tela de Início”. Isso instala o atalho offline.'); }
+    function compartilhar(){ const r = window.__lastResult; if(!r){ alert('Calcule primeiro.'); return; } const text = `Avaliador de Corridas
+Decisão: ${r.titulo} (score ${r.score}/100)
+Líquido/h: R$ ${fmt(r.liq_por_h)} | Líq/km: R$ ${fmt(r.liq_por_km)}
+Tempo total: ${fmt(r.tempo_total_min)} min | Custos: R$ ${fmt(r.custo_total)}
+Para bater meta: R$ ${fmt(r.tarifa_meta)}
+Motivos: ${r.motivos.join('; ')}`; if (navigator.share) navigator.share({ text }).catch(()=>{}); else alert(text); }
+
+    // ======= SESSÃO (horas trabalhadas e faturado) =======
+    const sessKey = 'sessao_v1';
+    function loadSess(){ try { return JSON.parse(localStorage.getItem(sessKey) || '{}'); } catch { return {}; } }
+    function saveSess(s){ localStorage.setItem(sessKey, JSON.stringify(s)); }
+    function now(){ return Math.floor(Date.now()/1000); }
+    function sessNormalize(s){ s = s || {}; s.running = !!s.running; s.startedAt = s.startedAt || null; s.elapsedSec = s.elapsedSec || 0; s.faturado = s.faturado || 0; s.corridas = s.corridas || 0; return s; }
+    function sessElapsedTotal(s){ return s.elapsedSec + (s.running && s.startedAt ? Math.max(0, now() - s.startedAt) : 0); }
+    function sessFormatHHMM(sec){ const h = Math.floor(sec/3600); const m = Math.floor((sec%3600)/60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
+    function sessUpdateUI(){
+      const s = sessNormalize(loadSess());
+      const elapsed = sessElapsedTotal(s);
+      const horas = elapsed / 3600;
+      const media = horas > 0 ? (s.faturado / horas) : 0;
+      $('sessHoras').textContent = sessFormatHHMM(elapsed);
+      $('sessFaturado').textContent = `R$ ${fmt(s.faturado)}`;
+      $('sessCorridas').textContent = String(s.corridas);
+      $('sessMedia').textContent = `R$ ${fmt(media)}`;
+      const btn = $('btnSessToggle'); if (btn) btn.textContent = s.running ? 'Pausar' : 'Iniciar';
+    }
+    function sessToggle(){
+      const s = sessNormalize(loadSess());
+      if (s.running){
+        if (s.startedAt) s.elapsedSec += Math.max(0, now() - s.startedAt);
+        s.startedAt = null; s.running = false;
+      } else {
+        s.startedAt = now(); s.running = true;
+      }
+      saveSess(s); sessUpdateUI();
+    }
+    function sessReset(){ saveSess({ running:false, startedAt:null, elapsedSec:0, faturado:0, corridas:0 }); sessUpdateUI(); }
+    function sessAddFromLastCalc(){
+      const r = window.__lastResultExt;
+      if (!r){ alert('Calcule primeiro a corrida atual.'); return; }
+      const s = sessNormalize(loadSess());
+      s.faturado += r.tarifa_liquida;
+      s.corridas += 1;
+      s.elapsedSec += Math.round(r.tempo_total_min * 60);
+      saveSess(s); sessUpdateUI();
+      alert('Corrida adicionada à sessão.');
+    }
+    setInterval(sessUpdateUI, 15000);
+    // Eventos dos botões da sessão
+    window.addEventListener('DOMContentLoaded', () => {
+      $('btnSessToggle').addEventListener('click', sessToggle);
+      $('btnSessAdd').addEventListener('click', sessAddFromLastCalc);
+      $('btnSessReset').addEventListener('click', sessReset);
+    });
+
+    // ======= Cálculo principal =======
+    function calcular(){
+      // Oferta
+      const tarifaRaw = parse($('tarifa').value);
+      const dist = parse($('dist').value);
+      const dur = parse($('dur').value);
+      const dh = parse($('deadhead').value);
+      const pedagios = parse($('pedagios').value);
+      const bonus = parse($('bonus').value);
+      const valorLiquido = $('valorLiquido').checked;
+      const taxaPlataforma = parse($('taxaPlataforma').value || 0);
+      if (tarifaRaw<=0 || dist<=0 || dur<=0){ alert('Informe valor, distância e duração.'); return; }
+
+      // Valor líquido da corrida
+      let tarifa = tarifaRaw + bonus - pedagios;
+      if (!valorLiquido && taxaPlataforma>0){
+        tarifa = tarifa * (1 - Math.min(0.9, taxaPlataforma/100));
+      }
+
+      // Custos/metas
+      const vm = parse($('vm').value || 25, 25);
+      const metaH = parse($('metah').value || 40, 40);
+      const metaKm = parse($('metaKm').value || 2.0, 2.0);
+      const c_km = parse($('c_km').value || 1.1, 1.1);
+      const c_h  = parse($('c_h').value || 5, 5);
+      const scoreMin = parse($('scoreMin').value || 70, 70);
+      const maxDeadheadKm = parse($('maxDeadheadKm').value || 3, 3);
+      const maxDeadheadRatio = parse($('maxDeadheadRatio').value || 60, 60);
+      const minTarifa = parse($('minTarifa').value || 8, 8);
+      const minDur = parse($('minDur').value || 0, 0);
+
+      // Pesos do score
+      let w_h = parse($('w_h').value || 50, 50);
+      let w_km = parse($('w_km').value || 30, 30);
+      let w_dead = parse($('w_dead').value || 10, 10);
+      let w_dur = parse($('w_dur').value || 10, 10);
+      const w_sum = w_h + w_km + w_dead + w_dur;
+      if (w_sum <= 0){ w_h=50; w_km=30; w_dead=10; w_dur=10; }
+      w_h/=w_sum; w_km/=w_sum; w_dead/=w_sum; w_dur/=w_sum;
+
+      // Tempos
+      const dh_time_min = dh > 0 ? (dh / Math.max(vm, 5)) * 60 : 0;
+      const tempo_total_min = dur + dh_time_min;
+      const tempo_total_h = tempo_total_min / 60;
+
+      // Custos
+      const custo_km_total = c_km * (dist + dh);
+      const custo_tempo = c_h * tempo_total_h;
+      const custo_total = custo_km_total + custo_tempo;
+
+      // Métricas
+      const lucro_liq = tarifa - custo_total;
+      const liq_por_h = lucro_liq / tempo_total_h;
+      const liq_por_km = lucro_liq / Math.max(0.1, (dist + dh));
+      const bruto_por_h = tarifa / tempo_total_h;
+      const dhRatio = (dh / Math.max(0.1, dist)) * 100;
+
+      // Regras duras
+      const motivos = [];
+      if (tarifaRaw < minTarifa) motivos.push(`Tarifa abaixo do mínimo (R$ ${fmt(tarifaRaw)} < R$ ${fmt(minTarifa)})`);
+      if (dur < minDur) motivos.push(`Duração abaixo do mínimo (${dur} min < ${minDur} min)`);
+      if (dh > maxDeadheadKm) motivos.push(`Pickup distante (${fmt(dh)} km > ${fmt(maxDeadheadKm)} km)`);
+      if (dhRatio > maxDeadheadRatio) motivos.push(`Pickup/viagem desfavorável (${fmt(dhRatio)}% > ${fmt(maxDeadheadRatio)}%)`);
+
+      // Score 0..100
+      const ph = Math.min(100, Math.max(0, (liq_por_h / metaH) * 100));
+      const pkm = Math.min(100, Math.max(0, (liq_por_km / metaKm) * 100));
+      const pdead = Math.max(0, 100 - (dhRatio)); // quanto maior pickup%, menor score
+      const pdur = Math.min(100, (dur / Math.max(minDur, 1)) * 100);
+      let score = Math.round( (w_h*ph) + (w_km*pkm) + (w_dead*pdead) + (w_dur*pdur) );
+
+      // Decisão
+      let classe='bad', titulo='Não recomendada';
+      if (motivos.length===0 && score >= Math.max(50, scoreMin) && liq_por_h >= metaH*0.85 && liq_por_km >= metaKm*0.85) {
+        titulo='Aceitar'; classe='ok';
+      } else if (score >= scoreMin*0.8 && liq_por_h >= metaH*0.7) {
+        titulo='Depende (limite)'; classe='warn';
+      }
+
+      const tarifa_break_even = custo_total;
+      const tarifa_meta = metaH * tempo_total_h + custo_total;
+
+      const res = $('res');
+      res.className = 'result ' + (classe === 'ok' ? 'ok' : classe === 'warn' ? 'warn' : 'bad');
+      res.style.display = 'block';
+      res.innerHTML = `
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
+          <div style="font-size:1.1rem;font-weight:600;">${titulo}</div>
+          <div style="opacity:.85;">Score: <b>${score}</b>/100</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><h3>R$/h bruto</h3><p class="${bruto_por_h>=metaH?'fine':'meh'}">R$ ${fmt(bruto_por_h)}</p></div>
+          <div class="kpi"><h3>R$/h <u>líquido</u></h3><p class="${liq_por_h>=metaH?'fine':(liq_por_h>=metaH*0.85?'meh':'fail')}">R$ ${fmt(liq_por_h)}</p></div>
+          <div class="kpi"><h3>Líquido por km</h3><p class="${liq_por_km>=metaKm?'fine':(liq_por_km>=metaKm*0.85?'meh':'fail')}">R$ ${fmt(liq_por_km)}</p></div>
+          <div class="kpi"><h3>Tempo total</h3><p>${fmt(tempo_total_min)} min <span style="opacity:.7">(inclui pickup ~ ${fmt(dh_time_min)} min)</span></p></div>
+          <div class="kpi"><h3>Custos</h3><p>R$ ${fmt(custo_total)} <span style="opacity:.7">(km: ${fmt(custo_km_total)} | tempo: ${fmt(custo_tempo)})</span></p></div>
+          <div class="kpi"><h3>Para empatar</h3><p>R$ ${fmt(tarifa_break_even)}</p></div>
+          <div class="kpi"><h3>Para bater meta</h3><p>R$ ${fmt(tarifa_meta)}</p></div>
+        </div>
+        ${motivos.length?`<ul class="reasons">${motivos.map(m=>`<li>• ${m}</li>`).join('')}</ul>`:''}
+        <small class="muted">Dica: ajuste metas por horário (use os presets) e seus custos reais. Salve padrões.</small>
+      `;
+
+      // resultados para compartilhar
+      window.__lastResult = { titulo, score, liq_por_h, liq_por_km, tempo_total_min, custo_total, tarifa_meta, motivos };
+
+      // resultados para a sessão (somatório)
+      window.__lastResultExt = {
+        tarifa_liquida: tarifa,
+        tempo_total_min: tempo_total_min
+      };
+    }
+
+    // PWA
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Enter') calcular(); });
+
+    // Init
+    carregar();
+  </script>
+</body>
+</html>
