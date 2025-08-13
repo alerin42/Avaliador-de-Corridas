@@ -45,6 +45,7 @@ Inclui também um **painel de sessão** que calcula horas trabalhadas, faturamen
 ## 💻 Como rodar localmente
 
 ### Opção 1 — Usando VS Code + Live Server
+
 1. Baixe ou clone este repositório.
 2. Abra a pasta no **VS Code**.
 3. Instale a extensão **Live Server**.
@@ -52,6 +53,8 @@ Inclui também um **painel de sessão** que calcula horas trabalhadas, faturamen
 5. Acesse o endereço mostrado (ex.: `http://127.0.0.1:5500`).
 
 ### Opção 2 — Usando Python
+
 ```bash
 cd pasta-do-projeto
 python -m http.server 8080
+```
