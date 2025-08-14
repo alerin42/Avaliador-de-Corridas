@@ -1,0 +1,21 @@
+{
+  "extends": [
+    "eslint:recommended",            // Regras recomendadas pelo ESLint
+    "plugin:prettier/recommended"    // Integra Prettier com ESLint
+  ],
+  "env": {
+    "browser": true,                // Permite o uso de variáveis de ambiente de navegador
+    "es2021": true                  // Configuração do ECMAScript 2021
+  },
+  "parserOptions": {
+    "ecmaVersion": "latest",        // Usa a versão mais recente do ECMAScript
+    "sourceType": "module"          // Permite usar módulos no JavaScript
+  },
+  "rules": {
+    // Aqui você pode adicionar regras personalizadas ou sobrescrever as regras padrão
+    "no-console": "warn",           // Exibe um aviso quando console.log() é utilizado
+    "no-unused-vars": "warn",       // Exibe um aviso para variáveis não utilizadas
+    "semi": ["error", "always"],    // Exige ponto e vírgula no final das linhas
+    "quotes": ["error", "single"]   // Exige aspas simples
+  }
+}
