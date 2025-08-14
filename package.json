@@ -58,6 +58,7 @@
     "arraybuffer.prototype.slice": "^1.0.4",
     "async-function": "^1.0.0",
     "available-typed-arrays": "^1.0.7",
+    "axios": "^1.11.0",
     "balanced-match": "^1.0.2",
     "brace-expansion": "^1.1.12",
     "call-bind": "^1.0.8",
